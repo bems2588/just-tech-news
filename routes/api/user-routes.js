@@ -24,29 +24,38 @@ router.get('/', (req, res) => {
 //GET /api.users/1
 router.get('/:id', (req, res) => {
   User.findOne({
-    // attributes: { exclude: ['password']},
-    // where: {
-    //   id: req.params.id
-    // },
+    attributes: { exclude: ['password'] },
+    where: {
+      id: req.params.id
+    },
     include: [
       {
         model: Post,
         attributes: ['id', 'title', 'post_url', 'created_at']
       },
+      // include the Comment model here:
+      {
+        model: Comment,
+        attributes: ['id', 'comment_text', 'created_at'],
+        include: {
+          model: Post,
+          attributes: ['title']
+        }
+      },
       {
         model: Post,
-        attributes: Vote,
+        attributes: ['title'],
+        through: Vote,
         as: 'voted_posts'
-
       }
     ]
   })
     .then(dbUserData => {
-      if(!dbUserData) {
+      if (!dbUserData) {
         res.status(404).json({ message: 'No user found with this id' })
         return;
       }
-        res.json(dbUserData);
+      res.json(dbUserData);
     })
     .catch(err => {
       console.log(err);
@@ -71,29 +80,29 @@ router.post('/', (req, res) => {
 
 router.post('/login', (req, res) => {
   // expects {email: 'lernantino@gmail.com', password: 'password1234'}
-    User.findOne({
-      where: {
-        email: req.body.email
-      }
-    }).then(dbUserData => {
-      if (!dbUserData) {
-        res.status(400).json({ message: 'No user with that email address!' });
-        return;
-      }
-  
-      //res.json({ user: dbUserData });
-  
-      // Verify user
-      const validPassword = dbUserData.checkPassword(req.body.password);
+  User.findOne({
+    where: {
+      email: req.body.email
+    }
+  }).then(dbUserData => {
+    if (!dbUserData) {
+      res.status(400).json({ message: 'No user with that email address!' });
+      return;
+    }
 
-      if (!validPassword) {
-        res.status(400).json({ message: 'Incorrect password!' });
-        return;
-      }
-      
-      res.json({ user: dbUserData, message: 'You are now logged in!' });      
-    });  
+    //res.json({ user: dbUserData });
+
+    // Verify user
+    const validPassword = dbUserData.checkPassword(req.body.password);
+
+    if (!validPassword) {
+      res.status(400).json({ message: 'Incorrect password!' });
+      return;
+    }
+
+    res.json({ user: dbUserData, message: 'You are now logged in!' });
   });
+});
 
 //PUT /api/users/1
 router.put('/:id', (req, res) => {
@@ -106,8 +115,8 @@ router.put('/:id', (req, res) => {
     }
   })
     .then(dbUserData => {
-      if(!dbUserData[0]) {
-        res.status(404).json({ message: 'No user found with this id'});
+      if (!dbUserData[0]) {
+        res.status(404).json({ message: 'No user found with this id' });
         return;
       }
       res.json(dbUserData);
@@ -126,8 +135,8 @@ router.delete('/:id', (req, res) => {
     }
   })
     .then(dbUserData => {
-      if(!dbUserData) {
-        res.status(404).json({  message: 'No user found with this id' });
+      if (!dbUserData) {
+        res.status(404).json({ message: 'No user found with this id' });
         return;
       }
       res.json(dbUserData);
